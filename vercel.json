@@ -9,4 +9,3 @@
       { "src": "/logs", "methods": ["GET", "POST"], "dest": "/api/logs.js" }
     ]
   }
-  

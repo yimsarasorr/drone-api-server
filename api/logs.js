@@ -32,15 +32,19 @@ export default async function handler(req, res) {
     }
 
   } else if (method === 'POST') {
-    const token = process.env.POCKETBASE_TOKEN;
+    const token = process.env.POCKETBASE_TOKEN; // Authorization token
     const { drone_id, drone_name, country, celsius } = req.body;
+
+    if (!drone_id || !drone_name || !country || !celsius) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
 
     try {
       const result = await axios.post(POCKETBASE_URL, {
         drone_id, drone_name, country, celsius
       }, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // Add Authorization header
           'Content-Type': 'application/json'
         }
       });
