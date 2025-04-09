@@ -1,0 +1,12 @@
+{
+    "version": 2,
+    "builds": [
+      { "src": "api/*.js", "use": "@vercel/node" }
+    ],
+    "routes": [
+      { "src": "/configs/(.*)", "dest": "/api/configs.js" },
+      { "src": "/status/(.*)", "dest": "/api/status.js" },
+      { "src": "/logs", "methods": ["GET", "POST"], "dest": "/api/logs.js" }
+    ]
+  }
+  
