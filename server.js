@@ -1,12 +1,14 @@
 const express = require('express');
 const axios = require('axios');
+const multer = require('multer'); // Moved this line up
+const cors = require('cors');
 
 const app = express();
-const upload = multer();
-const cors = require('cors');
-const multer = require('multer');
+const upload = multer(); // Now multer is declared before usage
+
 const CONFIG_URL = 'https://script.google.com/macros/s/AKfycbzwclqJRodyVjzYyY-NTQDb9cWG6Hoc5vGAABVtr5-jPA_ET_2IasrAJK4aeo5XoONiaA/exec';
 const LOG_URL = 'https://app-tracking.pockethost.io/api/collections/drone_logs/records';
+const POCKETBASE_TOKEN = '20250301efx'; // Authorization token
 
 app.use(express.json());
 app.use(cors());
@@ -47,15 +49,15 @@ app.get('/status/:id', async (req, res) => {
     }
 });
 
-app.get('/logs', async (req, res) => {
+app.get('/logs/:id', async (req, res) => { // Changed to accept dynamic drone_id
+    const droneId = Number(req.params.id);
     try {
-        const DRONE_ID = 65011078;
         const MAX_ITEMS = 25;
         const response = await axios.get(
-            `${LOG_URL}?filter=(drone_id=${DRONE_ID})&sort=-created&perPage=${MAX_ITEMS}`,
+            `${LOG_URL}?filter=(drone_id=${droneId})&sort=-created&perPage=${MAX_ITEMS}`,
             {
                 headers: {
-                    'Authorization': 'Bearer 20250301efx',
+                    'Authorization': `Bearer ${POCKETBASE_TOKEN}`,
                     'Content-Type': 'application/json'
                 }
             }
@@ -85,41 +87,33 @@ app.get('/logs', async (req, res) => {
     }
 });
 
-app.post("/logs", upload.none(), async (req, res) => {
-    if (!req.body.celsius) {
-        return res.status(400).send("Please enter the celsius value");
-    }
+app.post("/logs", async (req, res) => { // Removed multer
+    const { celsius, country = "Thailand", drone_id, drone_name } = req.body;
 
-    const celsius = req.body.celsius;
-    const country = "Thailand";
-    const droneId = 65011078;
-    const droneName = "Sorawich";
+    if (!celsius || !drone_id || !drone_name) {
+        return res.status(400).json({ error: "Missing required fields" });
+    }
 
     try {
         const { data } = await axios.post(LOG_URL, {
-            celsius: celsius,
-            country: country,
-            drone_id: droneId,
-            drone_name: droneName
+            celsius,
+            country,
+            drone_id,
+            drone_name
         }, {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer 20250301efx'
+                'Authorization': `Bearer ${POCKETBASE_TOKEN}`
             }
         });
         
-        console.log("Data generated: ", data);
-        res.status(200).json({
+        res.status(201).json({
             message: "Insert complete",
-            input_celsius: celsius,
-            generated_data: data,
-            country: country,
-            drone_id: droneId,
-            drone_name: droneName
+            generated_data: data
         });
     } catch (error) {
         console.error("Error: ", error.message);
-        res.status(500).send("Error handling the data");
+        res.status(500).json({ error: "Error handling the data" });
     }
 });
 
